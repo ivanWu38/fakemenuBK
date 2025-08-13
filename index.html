@@ -1,0 +1,431 @@
+
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>模擬漢堡王台灣手機點餐系統（本地圖片版）</title>
+  <link rel="stylesheet" href="styles.css"/>
+</head>
+<body>
+<header>
+  <h1>漢堡王點餐模擬</h1>
+  <div id="store-info">請選擇店舖</div>
+</header>
+
+<nav class="category-nav" id="categoryNav"></nav>
+<main id="menu"></main>
+<button id="cart-button">
+  🛒<span id="cart-count">0</span>
+</button>
+
+<!-- 店舖與取餐時間選擇 -->
+<div class="overlay" id="store-overlay" style="display:flex;">
+  <div class="modal">
+    <h2>選擇店舖與取餐時間</h2>
+    <div class="form-group">
+      <label for="store-select">店舖</label>
+      <select id="store-select"></select>
+    </div>
+    <div class="form-group">
+      <label for="pickup-time">取餐時間 (必填)</label>
+      <input type="text" id="pickup-time" placeholder="14:30" />
+    </div>
+    <button class="btn btn-block" id="confirm-store">開始點餐</button>
+  </div>
+</div>
+
+<!-- 自訂品項模態 -->
+<div class="overlay" id="customize-overlay">
+  <div class="modal" id="customize-modal">
+    <button class="close-btn" id="close-customize">×</button>
+    <h2 id="customize-title"></h2>
+    <div id="customize-content"></div>
+    <button class="btn btn-block" id="add-to-cart">加入購物車</button>
+  </div>
+</div>
+
+<!-- 購物車模態 -->
+<div class="overlay" id="cart-overlay">
+  <div class="modal" id="cart-modal">
+    <button class="close-btn" id="close-cart">×</button>
+    <h2>購物車</h2>
+    <div id="cart-items"></div>
+    <div class="cart-summary">合計：NT$ <span id="cart-total">0</span></div>
+    <button class="btn btn-block" id="checkout-btn">結帳</button>
+  </div>
+</div>
+
+<!-- 結帳確認模態 -->
+<div class="overlay" id="checkout-overlay">
+  <div class="modal" id="checkout-modal">
+    <h2>確認訂單</h2>
+    <div id="checkout-summary"></div>
+    <div class="cart-summary">總計：NT$ <span id="checkout-total">0</span></div>
+    <button class="btn btn-block secondary" id="edit-order">修改</button>
+    <button class="btn btn-block" id="finish-order">完成訂單</button>
+  </div>
+</div>
+
+<script>
+// 資料模型
+const stores = [
+  { id: 'tainan-west', name: '台南安平店' },
+  { id: 'tainan-east', name: '台南東門店' },
+  { id: 'kaohsiung', name: '高雄漢神店' },
+  { id: 'taichung', name: '台中中港店' },
+  { id: 'taipei-station', name: '台北車站店' }
+];
+
+// 本地圖片路徑
+const IMG_DIR = '';
+const PLACEHOLDER = IMG_DIR + 'placeholder.jpg';
+
+// 菜單
+const categories = [
+  {
+    id: 'beef',
+    name: '牛肉堡',
+    items: [
+      { id: 'whopper', name: '華堡', desc: '招牌火烤牛肉搭配番茄、生菜、洋蔥與醬料', imageSrc: IMG_DIR + 'whopper.jpg', single: 144, set: 189 },
+      { id: 'spicy-whopper', name: '辣味華堡', desc: '華堡加上辣醬，刺激味蕾', imageSrc: IMG_DIR + 'spicy-whopper.jpg', single: 144, set: 189 },
+      { id: 'double-whopper', name: '雙層華堡', desc: '兩片火烤牛肉片搭配經典配料', imageSrc: IMG_DIR + 'double-whopper.jpg', single: 204, set: 249 },
+      { id: 'angus-peanut', name: '花生安格斯牛堡', desc: '安格斯牛肉加上濃郁花生醬', imageSrc: IMG_DIR + 'angus-peanut.jpg', single: 155, set: 200 },
+      { id: 'angus-black-pepper', name: '黑胡椒安格斯牛堡', desc: '安格斯牛肉搭配黑胡椒醬汁', imageSrc: IMG_DIR + 'angus-black-pepper.jpg', single: 155, set: 200 },
+      { id: 'bacon-double', name: '培根雙層牛堡', desc: '雙層火烤牛肉與香脆培根', imageSrc: IMG_DIR + 'bacon-double.jpg', single: 229, set: 274 }
+    ]
+  },
+  {
+    id: 'chicken',
+    name: '雞肉/海鮮堡',
+    items: [
+      { id: 'king-chicken', name: '國王大雞堡', desc: '酥脆雞排配上生菜與美乃滋', imageSrc: IMG_DIR + 'king-chicken.jpg', single: 139, set: 184 },
+      { id: 'double-king-chicken', name: '雙層大雞堡', desc: '兩片雞排更滿足', imageSrc: IMG_DIR + 'double-king-chicken.jpg', single: 219, set: 264 },
+      { id: 'fish-burger', name: '鱈魚堡', desc: '酥脆鱈魚排搭配塔塔醬', imageSrc: IMG_DIR + 'fish-burger.jpg', single: 129, set: 174 },
+      { id: 'buffalo-double', name: '水牛城雙層牛堡', desc: '微辣醬汁與雙層牛肉', imageSrc: IMG_DIR + 'buffalo-double.jpg', single: 189, set: 234 }
+    ]
+  },
+  {
+    id: 'sides',
+    name: '配餐/點心',
+    items: [
+      { id: 'fries-small', name: '薯條(小)', desc: '金黃酥脆薯條', imageSrc: IMG_DIR + 'fries-small.jpg', single: 40 },
+      { id: 'fries-medium', name: '薯條(中)', desc: '暢銷必點經典薯條', imageSrc: IMG_DIR + 'fries-medium.jpg', single: 55 },
+      { id: 'onion-rings', name: '洋蔥圈', desc: '脆甜洋蔥圈', imageSrc: IMG_DIR + 'onion-rings.jpg', single: 49 },
+      { id: 'chicken-nuggets', name: '雞塊(6塊)', desc: '外酥內嫩雞塊', imageSrc: IMG_DIR + 'chicken-nuggets.jpg', single: 65 },
+      { id: 'sweet-potato-fries-s', name: '地瓜薯條(小)', desc: '香甜地瓜薯條', imageSrc: IMG_DIR + 'sweet-potato-fries-s.jpg', single: 39 },
+      { id: 'sweet-potato-fries-l', name: '地瓜薯條(大)', desc: '份量加倍的香甜地瓜薯條', imageSrc: IMG_DIR + 'sweet-potato-fries-l.jpg', single: 58 },
+      { id: 'buffalo-wings', name: '水牛城雞翅', desc: '微辣香酥雞翅兩隻', imageSrc: IMG_DIR + 'buffalo-wings.jpg', single: 69 }
+    ]
+  },
+  {
+    id: 'drinks',
+    name: '飲料',
+    items: [
+      { id: 'coke-s', name: '可樂(小)', desc: '', imageSrc: IMG_DIR + 'coke-s.jpg', single: 35 },
+      { id: 'coke-m', name: '可樂(中)', desc: '', imageSrc: IMG_DIR + 'coke-m.jpg', single: 45 },
+      { id: 'coke-l', name: '可樂(大)', desc: '', imageSrc: IMG_DIR + 'coke-l.jpg', single: 55 },
+      { id: 'tea-m', name: '紅茶(中)', desc: '', imageSrc: IMG_DIR + 'tea-m.jpg', single: 45 },
+      { id: 'tea-l', name: '紅茶(大)', desc: '', imageSrc: IMG_DIR + 'tea-l.jpg', single: 55 },
+      { id: 'coffee', name: '咖啡', desc: '', imageSrc: IMG_DIR + 'coffee.jpg', single: 50 }
+    ]
+  },
+  {
+    id: 'value',
+    name: '超值餐',
+    items: [
+      { id: 'family-set', name: '家庭分享餐', desc: '四堡四薯四飲，適合全家享用', imageSrc: IMG_DIR + 'family-set.jpg', single: 479 },
+      { id: 'double-value', name: '雙人超值餐', desc: '兩堡兩配兩飲，經濟實惠', imageSrc: IMG_DIR + 'double-value.jpg', single: 299 },
+      { id: 'one-plus-one', name: '1+1 任選餐', desc: '任選兩樣小點或飲品', imageSrc: IMG_DIR + 'one-plus-one.jpg', single: 129 }
+    ]
+  }
+];
+
+// 購物車陣列
+let cart = [];
+let selectedItem = null;
+
+// 初始化
+document.addEventListener('DOMContentLoaded', () => {
+  const storeSelect = document.getElementById('store-select');
+  stores.forEach(store => {
+    const option = document.createElement('option');
+    option.value = store.id; option.textContent = store.name; storeSelect.appendChild(option);
+  });
+  document.getElementById('confirm-store').addEventListener('click', () => {
+    const selectedStoreId = storeSelect.value;
+    const time = document.getElementById('pickup-time').value;
+    let pickupTime = time || '即刻取餐';
+    const storeName = stores.find(s => s.id === selectedStoreId).name;
+    document.getElementById('store-info').textContent = `${storeName} - 取餐時間 ${pickupTime}`;
+    document.getElementById('store-overlay').style.display = 'none';
+    renderCategories();
+    renderMenu('beef');
+  });
+});
+
+// 渲染類別按鈕
+function renderCategories() {
+  const nav = document.getElementById('categoryNav');
+  nav.innerHTML = '';
+  categories.forEach((cat, index) => {
+    const btn = document.createElement('button');
+    btn.textContent = cat.name; btn.dataset.id = cat.id;
+    if (index === 0) btn.classList.add('active');
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.category-nav button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderMenu(cat.id);
+    });
+    nav.appendChild(btn);
+  });
+}
+
+// 渲染菜單項目（只使用本地圖片）
+function renderMenu(categoryId) {
+  const menu = document.getElementById('menu');
+  menu.innerHTML = '';
+  const category = categories.find(cat => cat.id === categoryId);
+  if (!category) return;
+  category.items.forEach(item => {
+    const card = document.createElement('div');
+    card.className = 'item-card';
+
+    const img = document.createElement('img');
+    img.src = item.imageSrc || PLACEHOLDER;
+    img.alt = item.name;
+    img.onerror = () => { img.onerror = null; img.src = PLACEHOLDER; };
+    card.appendChild(img);
+
+    const info = document.createElement('div');
+    info.className = 'item-info';
+    const title = document.createElement('h3');
+    title.textContent = item.name; info.appendChild(title);
+    if (item.desc) {
+      const desc = document.createElement('p');
+      desc.textContent = item.desc; info.appendChild(desc);
+    }
+
+    const priceOpt = document.createElement('div');
+    priceOpt.className = 'price-options';
+    if (item.single != null) {
+      const btnSingle = document.createElement('button');
+      btnSingle.className = 'price-button';
+      btnSingle.textContent = `單點 NT$${item.single}`;
+      btnSingle.addEventListener('click', () => openCustomize(item, 'single'));
+      priceOpt.appendChild(btnSingle);
+    }
+    if (item.set != null) {
+      const btnSet = document.createElement('button');
+      btnSet.className = 'price-button';
+      btnSet.textContent = `套餐 NT$${item.set}`;
+      btnSet.addEventListener('click', () => openCustomize(item, 'set'));
+      priceOpt.appendChild(btnSet);
+    }
+    info.appendChild(priceOpt);
+    card.appendChild(info);
+    menu.appendChild(card);
+  });
+}
+
+function openCustomize(item, choice) {
+  selectedItem = { item, choice };
+  document.getElementById('customize-title').textContent = `${item.name} - ${choice === 'set' ? '套餐' : '單點'}`;
+  const content = document.getElementById('customize-content');
+  content.innerHTML = '';
+
+  if (choice === 'set') {
+    const sideGroup = document.createElement('div');
+    sideGroup.className = 'form-group';
+    sideGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '選擇配餐' }));
+    categories.find(c => c.id === 'sides').items.forEach((side, index) => {
+      const row = document.createElement('div'); row.className = 'option-row';
+      const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'side', value: side.id });
+      if (index === 0) radio.checked = true;
+      const label = document.createElement('span'); label.textContent = `${side.name} + NT$${side.single}`;
+      row.appendChild(radio); row.appendChild(label); sideGroup.appendChild(row);
+    });
+    content.appendChild(sideGroup);
+
+    const drinkGroup = document.createElement('div');
+    drinkGroup.className = 'form-group';
+    drinkGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '選擇飲料' }));
+    categories.find(c => c.id === 'drinks').items.forEach((drink, index) => {
+      const row = document.createElement('div'); row.className = 'option-row';
+      const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'drink', value: drink.id });
+      if (index === 0) radio.checked = true;
+      const label = document.createElement('span'); label.textContent = `${drink.name} + NT$${drink.single}`;
+      row.appendChild(radio); row.appendChild(label); drinkGroup.appendChild(row);
+    });
+    content.appendChild(drinkGroup);
+
+    const upgradeGroup = document.createElement('div');
+    upgradeGroup.className = 'form-group';
+    upgradeGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '飲料升級' }));
+    ['不升級', '升級大杯 +10'].forEach((option, idx) => {
+      const row = document.createElement('div'); row.className = 'option-row';
+      const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'drink-upgrade', value: idx === 0 ? 'none' : 'large' });
+      if (idx === 0) radio.checked = true;
+      const label = document.createElement('span'); label.textContent = option;
+      row.appendChild(radio); row.appendChild(label); upgradeGroup.appendChild(row);
+    });
+    content.appendChild(upgradeGroup);
+  } else {
+    const extrasGroup = document.createElement('div');
+    extrasGroup.className = 'form-group';
+    extrasGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '加料' }));
+    const extras = [
+      { id: 'cheese', name: '起司 +10', price: 10 },
+      { id: 'bacon', name: '培根 +15', price: 15 },
+      { id: 'egg', name: '煎蛋 +15', price: 15 }
+    ];
+    extras.forEach(extra => {
+      const row = document.createElement('div'); row.className = 'option-row';
+      const chk = Object.assign(document.createElement('input'), { type: 'checkbox', name: 'extra', value: extra.id });
+      chk.dataset.price = extra.price;
+      const label = document.createElement('span'); label.textContent = extra.name;
+      row.appendChild(chk); row.appendChild(label); extrasGroup.appendChild(row);
+    });
+    content.appendChild(extrasGroup);
+
+    const removeGroup = document.createElement('div');
+    removeGroup.className = 'form-group';
+    removeGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '去除配料' }));
+    ['不加洋蔥', '不加酸黃瓜', '不加番茄'].forEach(removeOpt => {
+      const row = document.createElement('div'); row.className = 'option-row';
+      const chk = Object.assign(document.createElement('input'), { type: 'checkbox', name: 'remove', value: removeOpt });
+      const label = document.createElement('span'); label.textContent = removeOpt;
+      row.appendChild(chk); row.appendChild(label); removeGroup.appendChild(row);
+    });
+    content.appendChild(removeGroup);
+  }
+
+  const qtyGroup = document.createElement('div');
+  qtyGroup.className = 'form-group';
+  qtyGroup.appendChild(Object.assign(document.createElement('label'), { textContent: '數量' }));
+  const qtyControls = document.createElement('div');
+  qtyControls.className = 'quantity-controls';
+  const minus = document.createElement('button'); minus.textContent = '-';
+  const qtyInput = Object.assign(document.createElement('input'), { type: 'number', value: 1, min: 1 });
+  const plus = document.createElement('button'); plus.textContent = '+';
+  minus.addEventListener('click', () => { let val = parseInt(qtyInput.value); if (val > 1) qtyInput.value = val - 1; });
+  plus.addEventListener('click', () => { let val = parseInt(qtyInput.value); qtyInput.value = val + 1; });
+  qtyControls.appendChild(minus); qtyControls.appendChild(qtyInput); qtyControls.appendChild(plus);
+  qtyGroup.appendChild(qtyControls);
+  content.appendChild(qtyGroup);
+  document.getElementById('customize-overlay').style.display = 'flex';
+}
+
+document.getElementById('close-customize').addEventListener('click', () => {
+  document.getElementById('customize-overlay').style.display = 'none';
+});
+
+document.getElementById('add-to-cart').addEventListener('click', () => {
+  if (!selectedItem) return;
+  const choice = selectedItem.choice;
+  const basePrice = choice === 'set' ? selectedItem.item.set : selectedItem.item.single;
+  let extrasTotal = 0; let optionsSummary = [];
+  const qty = parseInt(document.querySelector('#customize-content input[type="number"]').value);
+
+  if (choice === 'set') {
+    const side = document.querySelector('input[name="side"]:checked').value;
+    const drink = document.querySelector('input[name="drink"]:checked').value;
+    const upgrade = document.querySelector('input[name="drink-upgrade"]:checked').value;
+    const sideItem = categories.find(c => c.id === 'sides').items.find(i => i.id === side);
+    const drinkItem = categories.find(c => c.id === 'drinks').items.find(i => i.id === drink);
+    optionsSummary.push(`配餐: ${sideItem.name}`); optionsSummary.push(`飲料: ${drinkItem.name}`);
+    let upgradeExtra = 0; if (upgrade === 'large') { upgradeExtra = 10; optionsSummary.push('飲料升級大杯 +10'); }
+    extrasTotal += sideItem.single + drinkItem.single + upgradeExtra;
+  } else {
+    document.querySelectorAll('input[name="extra"]:checked').forEach(chk => {
+      const price = parseInt(chk.dataset.price); extrasTotal += price; optionsSummary.push(chk.nextSibling.textContent);
+    });
+    document.querySelectorAll('input[name="remove"]:checked').forEach(chk => { optionsSummary.push(chk.value); });
+  }
+
+  const itemTotal = (basePrice + extrasTotal) * qty;
+  cart.push({ name: selectedItem.item.name, type: choice, basePrice, options: optionsSummary, qty, extrasTotal, total: itemTotal });
+  updateCartDisplay();
+  document.getElementById('customize-overlay').style.display = 'none';
+});
+
+function updateCartDisplay() {
+  const count = cart.reduce((acc, item) => acc + item.qty, 0);
+  const cartBtn = document.getElementById('cart-button');
+  if (count > 0) {
+    cartBtn.style.display = 'flex';
+    document.getElementById('cart-count').textContent = count;
+  } else {
+    cartBtn.style.display = 'none';
+  }
+}
+
+document.getElementById('cart-button').addEventListener('click', () => {
+  renderCart();
+  document.getElementById('cart-overlay').style.display = 'flex';
+});
+
+document.getElementById('close-cart').addEventListener('click', () => {
+  document.getElementById('cart-overlay').style.display = 'none';
+});
+
+function renderCart() {
+  const cartItemsDiv = document.getElementById('cart-items');
+  cartItemsDiv.innerHTML = '';
+  let total = 0;
+  cart.forEach((item, index) => {
+    total += item.total;
+    const div = document.createElement('div'); div.className = 'cart-item';
+    const title = document.createElement('h4'); title.textContent = `${item.name} (${item.type === 'set' ? '套餐' : '單點'})`; div.appendChild(title);
+    const details = document.createElement('div'); details.className = 'details'; details.textContent = item.options.join(' / ') || '無客製化'; div.appendChild(details);
+    const controls = document.createElement('div'); controls.className = 'cart-controls';
+    const qtyCtrls = document.createElement('div'); qtyCtrls.className = 'quantity-controls';
+    const minus = document.createElement('button'); minus.textContent = '-';
+    const qty = Object.assign(document.createElement('input'), { type: 'number', value: item.qty, min: 1 });
+    const plus = document.createElement('button'); plus.textContent = '+';
+    minus.addEventListener('click', () => { if (item.qty > 1) { item.qty--; qty.value = item.qty; item.total = (item.basePrice + item.extrasTotal) * item.qty; renderCart(); } });
+    plus.addEventListener('click', () => { item.qty++; qty.value = item.qty; item.total = (item.basePrice + item.extrasTotal) * item.qty; renderCart(); });
+    qtyCtrls.appendChild(minus); qtyCtrls.appendChild(qty); qtyCtrls.appendChild(plus);
+    controls.appendChild(qtyCtrls);
+    const del = document.createElement('button'); del.textContent = '刪除'; del.className = 'btn secondary';
+    del.addEventListener('click', () => { cart.splice(index, 1); renderCart(); updateCartDisplay(); });
+    controls.appendChild(del);
+    div.appendChild(controls);
+    cartItemsDiv.appendChild(div);
+  });
+  document.getElementById('cart-total').textContent = total;
+}
+
+document.getElementById('checkout-btn').addEventListener('click', () => {
+  if (cart.length === 0) { alert('購物車沒有任何商品'); return; }
+  document.getElementById('cart-overlay').style.display = 'none';
+  renderCheckout();
+  document.getElementById('checkout-overlay').style.display = 'flex';
+});
+document.getElementById('edit-order').addEventListener('click', () => {
+  document.getElementById('checkout-overlay').style.display = 'none';
+  document.getElementById('cart-overlay').style.display = 'flex';
+});
+document.getElementById('finish-order').addEventListener('click', () => {
+  alert('訂單已送出！謝謝您的使用。');
+  cart = []; updateCartDisplay();
+  document.getElementById('checkout-overlay').style.display = 'none';
+});
+
+function renderCheckout() {
+  const summaryDiv = document.getElementById('checkout-summary');
+  summaryDiv.innerHTML = '';
+  let total = 0;
+  cart.forEach(item => {
+    total += item.total;
+    const div = document.createElement('div'); div.className = 'cart-item';
+    const title = document.createElement('h4'); title.textContent = `${item.name} x${item.qty} (${item.type === 'set' ? '套餐' : '單點'})`; div.appendChild(title);
+    const details = document.createElement('div'); details.className = 'details'; details.textContent = item.options.join(' / ') || '無客製化'; div.appendChild(details);
+    const price = document.createElement('div'); price.className = 'details'; price.textContent = `金額：NT$${item.total}`; div.appendChild(price);
+    summaryDiv.appendChild(div);
+  });
+  document.getElementById('checkout-total').textContent = total;
+}
+</script>
+</body>
+</html>

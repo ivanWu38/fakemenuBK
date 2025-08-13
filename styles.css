@@ -1,0 +1,298 @@
+
+/* 全局樣式變數 */
+:root {
+    --primary-color: #d62300;
+    --secondary-color: #f9a01b;
+    --bg-color: #fff7e6;
+    --text-color: #333;
+    --card-bg: #fff;
+    --border-radius: 8px;
+    --transition: 0.3s ease;
+}
+
+body {
+    margin: 0;
+    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-color);
+}
+
+header {
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 1000;
+    background-color: var(--primary-color);
+    color: white;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 16px;
+}
+header h1 { margin: 0; font-size: 20px; }
+
+.category-nav {
+    position: fixed; top: 50px; left: 0; right: 0; z-index: 999;
+    background-color: var(--bg-color); display: flex; overflow-x: auto;
+    padding: 8px 0; border-bottom: 1px solid #eee;
+}
+.category-nav button {
+    flex: 0 0 auto; margin: 0 8px; padding: 6px 12px;
+    border: 1px solid var(--primary-color); background-color: white;
+    border-radius: 20px; color: var(--primary-color); font-weight: 600;
+    cursor: pointer; transition: var(--transition);
+}
+.category-nav button.active, .category-nav button:hover {
+    background-color: var(--primary-color);
+    color: white;
+}
+
+#menu {
+    padding: 120px 12px 80px;
+    max-width: 100%;
+    margin: 0 auto;
+}
+
+.item-card {
+    background-color: var(--card-bg);
+    border-radius: var(--border-radius);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    margin-bottom: 16px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.item-card img {
+    display: block;
+    width: 100%;
+    height: auto; /* 依比例縮放 */
+    max-height: clamp(180px, 28vw, 320px); /* 響應式高度限制 */
+    object-fit: contain; /* 完整顯示，不裁切 */
+    object-position: center; /* 主體置中 */
+    background: #fff; /* 留白背景 */
+    padding: clamp(8px, 1.2vw, 16px); /* 彈性留白 */
+}
+
+.item-info {
+    padding: 12px;
+}
+.item-info h3 {
+    margin: 0 0 4px;
+    font-size: 18px;
+}
+.item-info p {
+    margin: 0 0 8px;
+    font-size: 14px;
+    color: #666;
+}
+
+.price-options {
+    display: flex;
+    justify-content: space-between;
+}
+.price-button {
+    flex: 1;
+    margin-right: 8px;
+    padding: 6px;
+    font-size: 14px;
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: var(--transition);
+}
+.price-button:last-child {
+    margin-right: 0;
+}
+.price-button:hover {
+    background-color: var(--primary-color);
+}
+
+#cart-button {
+    position: fixed;
+    bottom: 16px;
+    right: 16px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 56px;
+    height: 56px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+#cart-button span {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    background-color: var(--secondary-color);
+    color: white;
+    border-radius: 50%;
+    padding: 2px 6px;
+    font-size: 12px;
+}
+
+.overlay {
+    position: fixed;
+    inset: 0;
+    background-color: rgba(0,0,0,0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+.modal {
+    background-color: white;
+    border-radius: var(--border-radius);
+    width: 90%;
+    max-height: 90vh;
+    overflow-y: auto;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+    position: relative;
+}
+.modal h2 {
+    margin-top: 0;
+    text-align: center;
+}
+.close-btn {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: none;
+    border: none;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+.form-group {
+    margin-bottom: 12px;
+}
+.form-group label {
+    display: block;
+    margin-bottom: 4px;
+    font-weight: 600;
+}
+.form-group select,
+.form-group input[type="text"],
+.form-group input[type="number"] {
+    width: 100%;
+    padding: 8px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+}
+.form-group .option-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.option-row span {
+    flex: 1;
+}
+.option-row input[type="radio"],
+.option-row input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.quantity-controls {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+}
+.quantity-controls button {
+    width: 30px;
+    height: 30px;
+    border: 1px solid var(--primary-color);
+    background-color: white;
+    color: var(--primary-color);
+    font-size: 18px;
+    border-radius: 4px;
+    cursor: pointer;
+}
+.quantity-controls input {
+    width: 50px;
+    text-align: center;
+    margin: 0 8px;
+}
+
+.cart-item {
+    border-bottom: 1px solid #f0f0f0;
+    padding: 8px 0;
+    display: flex;
+    flex-direction: column;
+}
+.cart-item h4 {
+    margin: 0;
+    font-size: 16px;
+}
+.cart-item .details {
+    font-size: 14px;
+    color: #666;
+}
+.cart-controls {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 4px;
+}
+.cart-summary {
+    margin-top: 12px;
+    text-align: right;
+    font-size: 16px;
+    font-weight: 600;
+}
+.btn {
+    display: inline-block;
+    padding: 8px 16px;
+    margin-top: 12px;
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 16px;
+}
+.btn.secondary {
+    background-color: var(--secondary-color);
+}
+.btn-block {
+    width: 100%;
+    text-align: center;
+}
+
+#store-overlay .modal {
+    max-width: 500px;
+}
+#store-overlay select,
+#store-overlay input[type="time"] {
+    padding: 8px;
+    width: 100%;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+/* RWD 限制內容寬度 */
+@media (min-width: 768px) {
+    #menu { max-width: 860px; }
+}
+@media (min-width: 1024px) {
+    #menu { max-width: 900px; }
+}
+
+/* 捲軸樣式 */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-thumb {
+    background-color: #ccc;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-track {
+    background-color: transparent;
+}
